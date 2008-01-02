@@ -16,6 +16,7 @@ BuildRequires:	php-devel >= 3:5.2.0
 BuildRequires:	libesmtp-devel >= 1.0.3r1-1mdk
 BuildRequires:	openssl-devel
 Epoch:		1
+BuildRoot:	%{_tmppath}/%{name}-%{version}-buildroot
 
 %description
 Esmtp is a wrapper for SMTP client library based on the libESMTP library. You
