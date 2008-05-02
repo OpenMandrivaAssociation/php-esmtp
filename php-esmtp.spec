@@ -6,7 +6,7 @@
 Summary:	ESMTP client extenion for PHP
 Name:		php-%{modname}
 Version:	0.3.1
-Release:	%mkrel 14
+Release:	%mkrel 15
 Group:		Development/PHP
 License:	PHP License
 URL:		http://pecl.php.net/package/esmtp
@@ -16,7 +16,7 @@ BuildRequires:	php-devel >= 3:5.2.0
 BuildRequires:	libesmtp-devel >= 1.0.3r1-1mdk
 BuildRequires:	openssl-devel
 Epoch:		1
-BuildRoot:	%{_tmppath}/%{name}-%{version}-buildroot
+BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
 Esmtp is a wrapper for SMTP client library based on the libESMTP library. You
