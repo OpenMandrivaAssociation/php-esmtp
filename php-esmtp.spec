@@ -3,7 +3,7 @@
 %define soname %{modname}.so
 %define inifile A34_%{modname}.ini
 
-Summary:	ESMTP client extenion for PHP
+Summary:	ESMTP client extension for PHP
 Name:		php-%{modname}
 Version:	0.3.1
 Release:	%mkrel 16
