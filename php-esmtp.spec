@@ -6,7 +6,7 @@
 Summary:	ESMTP client extension for PHP
 Name:		php-%{modname}
 Version:	0.3.1
-Release:	%mkrel 30
+Release:	%mkrel 31
 Group:		Development/PHP
 License:	PHP License
 URL:		http://pecl.php.net/package/esmtp
