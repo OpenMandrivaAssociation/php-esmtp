@@ -6,12 +6,13 @@
 Summary:	ESMTP client extension for PHP
 Name:		php-%{modname}
 Version:	0.3.1
-Release:	%mkrel 31
+Release:	%mkrel 32
 Group:		Development/PHP
 License:	PHP License
 URL:		http://pecl.php.net/package/esmtp
 Source0:	esmtp-%{version}.tar.bz2
 Patch0:		esmtp-0.3.1-compile_fix.diff
+Patch1:		esmtp-0.3.1-php53.diff
 BuildRequires:	php-devel >= 3:5.2.0
 BuildRequires:	libesmtp-devel >= 1.0.3r1-1mdk
 BuildRequires:	openssl-devel
@@ -27,6 +28,7 @@ support.
 
 %setup -q -n esmtp-%{version}
 %patch0 -p0
+%patch1 -p0
 
 %build
 %serverbuild
