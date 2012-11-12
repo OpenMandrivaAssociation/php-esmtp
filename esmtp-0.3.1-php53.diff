@@ -1,0 +1,259 @@
+--- esmtp.c	2004-09-02 09:34:35.000000000 +0200
++++ esmtp.c.oden	2011-04-28 13:17:19.362148977 +0200
+@@ -141,7 +141,7 @@ static auth_context_t _php_get_esmtp_aut
+ }
+ /* }}} */
+ 
+-function_entry esmtp_functions[] = {
++zend_function_entry esmtp_functions[] = {
+     ZEND_FALIAS(esmtp_version,                  smtp_version,             NULL)
+     ZEND_FALIAS(esmtp_errno,                    smtp_errno,               NULL)
+     ZEND_FALIAS(esmtp_strerror,                 smtp_strerror,            NULL)
+@@ -150,33 +150,60 @@ function_entry esmtp_functions[] = {
+ };
+ 
+ /**
+- * Universal php destructor for all the esmtp objects
++ * Destructors for all the esmtp objects
+  **/
+-static void _php_free_esmtp_object(zend_rsrc_list_entry *rsrc TSRMLS_DC)
++static void _php_free_esmtp_session_object(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+ {
+     char *p = NULL;
+ 
+-    if (rsrc->type == le_esmtp_session) {
++    if (rsrc->type == le_esmtp_session && rsrc->ptr != NULL) {
+ #ifdef _auth_client_h
+         smtp_auth_set_context(rsrc->ptr, NULL);
+ #endif
+         p = (char *)smtp_set_application_data(rsrc->ptr, NULL);
+         if (p)
+             efree(p);
+-        smtp_destroy_session(rsrc->ptr);
+-    } else if (rsrc->type == le_esmtp_message) {
++//        smtp_destroy_session(rsrc->ptr);
++        rsrc->ptr = NULL;
++    }
++}
++
++static void _php_free_esmtp_message_object(zend_rsrc_list_entry *rsrc TSRMLS_DC)
++{
++    char *p = NULL;
++
++    if (rsrc->type == le_esmtp_message) {
+         p = (char *)smtp_message_set_application_data(rsrc->ptr, NULL);
+         if (p)
+             efree(p);
+-    } else if (rsrc->type == le_esmtp_recipient) {
++    }
++}
++
++static void _php_free_esmtp_recipient_object(zend_rsrc_list_entry *rsrc TSRMLS_DC)
++{
++    char *p = NULL;
++    
++    if (rsrc->type == le_esmtp_recipient) {
+         p = (char *)smtp_recipient_set_application_data(rsrc->ptr, NULL);
+         if (p)
+             efree(p);
+-    } else if (rsrc->type == le_esmtp_etrnnode) {
++    }
++}
++
++static void _php_free_esmtp_etrnnode_object(zend_rsrc_list_entry *rsrc TSRMLS_DC)
++{
++    char *p = NULL;
++
++    if (rsrc->type == le_esmtp_etrnnode) {
+         p = (char *)smtp_etrn_set_application_data(rsrc->ptr, NULL);
+         if (p)
+             efree(p);
+-    } else if (rsrc->type == le_esmtp_auth) {
++    }
++}
++
++static void _php_free_esmtp_auth_object(zend_rsrc_list_entry *rsrc TSRMLS_DC)
++{
++    if (rsrc->type == le_esmtp_auth) {
+     }
+ }
+     
+@@ -281,7 +308,7 @@ callback_esmtp_starttls_password(char *b
+     }
+ 
+     MAKE_STD_ZVAL(params[0]);
+-    convert_to_long(params[0]);
++    Z_TYPE_P(params[0]) = IS_LONG;
+     Z_LVAL_P(params[0]) = rwflag;
+ 
+     if (zend_hash_find(Z_ARRVAL_P(z_data), "userdata", sizeof("userdata"), (void **)&z_userdata) == SUCCESS && z_userdata) {
+@@ -326,10 +353,10 @@ PHP_FUNCTION(smtp_starttls_set_password_
+     MAKE_STD_ZVAL(z_data);
+     array_init(z_data);
+ 
+-    ZVAL_ADDREF(cb);
++    Z_ADDREF_P(cb);
+     add_assoc_zval_ex(z_data, "funcname", sizeof("funcname"), cb);
+     if (arg) {
+-        ZVAL_ADDREF(arg);
++        Z_ADDREF_P(arg);
+         add_assoc_zval_ex(z_data, "userdata", sizeof("userdata"), arg);
+     }
+ 
+@@ -558,7 +585,6 @@ callback_esmtp_session_event(smtp_sessio
+     rnum = zend_list_insert(session, le_esmtp_session);
+     object_init_ex(params[0], esmtp_session_class_entry);
+     add_property_resource(params[0], "Esmtp_Session", rnum);
+-    // ref or not ref? zend_list_addref(rnum);
+ 
+     z_data = (zval *) arg;
+ 
+@@ -570,7 +596,7 @@ callback_esmtp_session_event(smtp_sessio
+ 
+     /* send event_no identifier */
+     MAKE_STD_ZVAL(params[1]);
+-    convert_to_long(params[1]);
++    Z_TYPE_P(params[1]) = IS_LONG;
+     Z_LVAL_P(params[1]) = event_no;
+ 
+     if (zend_hash_find(Z_ARRVAL_P(z_data), "userdata", sizeof("userdata"), (void **)&z_userdata) == SUCCESS && z_userdata) {
+@@ -589,7 +615,7 @@ callback_esmtp_session_event(smtp_sessio
+         message = va_arg (ap, smtp_message_t);
+ 
+         MAKE_STD_ZVAL(params[param_len]);
+-        convert_to_string(params[param_len]);
++        Z_TYPE_P(params[param_len]) = IS_STRING;
+         ZVAL_STRING(params[param_len], text, 1);
+         ++param_len;
+         
+@@ -604,7 +630,7 @@ callback_esmtp_session_event(smtp_sessio
+         recipient = va_arg (ap, smtp_recipient_t);
+ 
+         MAKE_STD_ZVAL(params[param_len]);
+-        convert_to_string(params[param_len]);
++        Z_TYPE_P(params[param_len]) = IS_STRING;
+         ZVAL_STRING(params[param_len], text, 1);
+         ++param_len;
+         
+@@ -625,7 +651,7 @@ callback_esmtp_session_event(smtp_sessio
+         ++param_len;
+         
+         MAKE_STD_ZVAL(params[param_len]);
+-        convert_to_long(params[param_len]);
++        Z_TYPE_P(params[param_len]) = IS_LONG;
+         Z_LVAL_P(params[param_len]) = intarg;
+         ++param_len;
+         break;
+@@ -647,12 +673,12 @@ callback_esmtp_session_event(smtp_sessio
+         text = va_arg (ap, char *);
+ 
+         MAKE_STD_ZVAL(params[param_len]);
+-        convert_to_long(params[param_len]);
++        Z_TYPE_P(params[param_len]) = IS_LONG;
+         Z_LVAL_P(params[param_len]) = intarg;
+         ++param_len;
+ 
+         MAKE_STD_ZVAL(params[param_len]);
+-        convert_to_string(params[param_len]);
++        Z_TYPE_P(params[param_len]) = IS_STRING;
+         ZVAL_STRING(params[param_len], text, 1);
+         ++param_len;
+         break;
+@@ -677,7 +703,7 @@ callback_esmtp_session_event(smtp_sessio
+         intptr = va_arg (ap, int *);
+ 
+         MAKE_STD_ZVAL(params[param_len]);
+-        convert_to_long(params[param_len]);
++        Z_TYPE_P(params[param_len]) = IS_LONG;
+         Z_LVAL_P(params[param_len]) = longarg;
+         ++param_len;
+         break;
+@@ -688,7 +714,7 @@ callback_esmtp_session_event(smtp_sessio
+         intptr = va_arg (ap, int *);
+ 
+         MAKE_STD_ZVAL(params[param_len]);
+-        convert_to_long(params[param_len]);
++        Z_TYPE_P(params[param_len]) = IS_LONG;
+         Z_LVAL_P(params[param_len]) = intarg;
+         ++param_len;
+         break;
+@@ -700,7 +726,7 @@ callback_esmtp_session_event(smtp_sessio
+         intptr = va_arg (ap, int *);
+ 
+         MAKE_STD_ZVAL(params[param_len]);
+-        convert_to_long(params[param_len]);
++        Z_TYPE_P(params[param_len]) = IS_LONG;
+         Z_LVAL_P(params[param_len]) = longarg;
+         ++param_len;
+         break;
+@@ -758,10 +784,10 @@ PHP_METHOD(esmtp_session, set_eventcb)
+     MAKE_STD_ZVAL(z_data);
+     array_init(z_data);
+ 
+-    ZVAL_ADDREF(cb);
++    Z_ADDREF_P(cb);
+     add_assoc_zval_ex(z_data, "funcname", sizeof("funcname"), cb);
+     if (arg) {
+-        ZVAL_ADDREF(arg);
++        Z_ADDREF_P(arg);
+         add_assoc_zval_ex(z_data, "userdata", sizeof("userdata"), arg);
+     }
+ 
+@@ -798,11 +824,11 @@ callback_esmtp_session_monitor(const cha
+     }
+ 
+     MAKE_STD_ZVAL(params[0]);
+-    convert_to_string(params[0]);
++    Z_TYPE_P(params[0]) = IS_STRING;
+     ZVAL_STRINGL(params[0], (char *)buf, buflen, 1);
+     
+     MAKE_STD_ZVAL(params[1]);
+-    convert_to_long(params[1]);
++    Z_TYPE_P(params[1]) = IS_LONG;
+     Z_LVAL_P(params[1]) = writing;
+ 
+     if (zend_hash_find(Z_ARRVAL_P(z_data), "userdata", sizeof("userdata"), (void **)&z_userdata) == SUCCESS && z_userdata) {
+@@ -841,11 +867,11 @@ PHP_METHOD(esmtp_session, set_monitorcb)
+     MAKE_STD_ZVAL(z_data);
+     array_init(z_data);
+ 
+-    ZVAL_ADDREF(cb);
++    Z_ADDREF_P(cb);
+     add_assoc_zval_ex(z_data, "funcname", sizeof("funcname"), cb);
+     add_property_zval(getThis(), "header_regex_funcname", cb);
+     if (arg) {
+-        ZVAL_ADDREF(arg);
++        Z_ADDREF_P(arg);
+         add_assoc_zval_ex(z_data, "userdata", sizeof("userdata"), arg);
+         add_property_zval(getThis(), "header_regex_userdata", arg);
+     }
+@@ -1189,10 +1215,10 @@ PHP_METHOD(esmtp_message, set_messagecb)
+     MAKE_STD_ZVAL(z_data);
+     array_init(z_data);
+ 
+-    ZVAL_ADDREF(cb);
++    Z_ADDREF_P(cb);
+     add_assoc_zval_ex(z_data, "funcname", sizeof("funcname"), cb);
+     if (arg) {
+-        ZVAL_ADDREF(arg);
++        Z_ADDREF_P(arg);
+         add_assoc_zval_ex(z_data, "userdata", sizeof("userdata"), arg);
+     }
+ 
+@@ -2323,11 +2349,11 @@ PHP_MINIT_FUNCTION(esmtp)
+     auth_client_init();
+ #endif
+ 
+-    le_esmtp_session   = zend_register_list_destructors_ex(_php_free_esmtp_object, NULL, "Esmtp_Session", module_number);
+-    le_esmtp_message   = zend_register_list_destructors_ex(_php_free_esmtp_object, NULL, "Esmtp_Message", module_number);
+-    le_esmtp_recipient = zend_register_list_destructors_ex(_php_free_esmtp_object, NULL, "Esmtp_Recipient", module_number);
+-    le_esmtp_etrnnode  = zend_register_list_destructors_ex(_php_free_esmtp_object, NULL, "Esmtp_Etrnnode", module_number);
+-    le_esmtp_auth      = zend_register_list_destructors_ex(_php_free_esmtp_object, NULL, "Esmtp_Auth", module_number);
++    le_esmtp_session   = zend_register_list_destructors_ex(_php_free_esmtp_session_object, NULL, "Esmtp_Session", module_number);
++    le_esmtp_message   = zend_register_list_destructors_ex(_php_free_esmtp_message_object, NULL, "Esmtp_Message", module_number);
++    le_esmtp_recipient = zend_register_list_destructors_ex(_php_free_esmtp_recipient_object, NULL, "Esmtp_Recipient", module_number);
++    le_esmtp_etrnnode  = zend_register_list_destructors_ex(_php_free_esmtp_etrnnode_object, NULL, "Esmtp_Etrnnode", module_number);
++    le_esmtp_auth      = zend_register_list_destructors_ex(_php_free_esmtp_auth_object, NULL, "Esmtp_Auth", module_number);
+ 
+     INIT_OVERLOADED_CLASS_ENTRY(ce, "Esmtp_Session",      esmtp_session_functions, NULL, NULL, NULL);
+     esmtp_session_class_entry = zend_register_internal_class_ex(&ce, NULL, NULL TSRMLS_CC);

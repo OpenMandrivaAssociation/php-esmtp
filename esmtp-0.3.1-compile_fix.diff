@@ -1,0 +1,66 @@
+--- config.m4	2004-09-06 12:46:25.000000000 +0200
++++ config.m4.oden	2005-01-08 12:21:41.327127220 +0100
+@@ -17,61 +17,18 @@
+   ESMTP_INCS=`$ESMTP_CONFIG --cflags`
+   ESMTP_LIBS=`$ESMTP_CONFIG --libs`
+ 
+-  dnl check libESMTP version
+-  libesmtp_version=`$ESMTP_CONFIG --version 2>/dev/null|head -n 1|sed -e 's/^[^0-9]*//' -e 's/[a-z]* *$//'`
+-  if test -z "$libesmtp_version"; then
+-    echo "Error: libesmtp-config not found."
+-    exit 1
+-  fi
+-  
+-  IFS=".r"; set $libesmtp_version; IFS=' '
+-  esmtp_libesmtp_version=`expr [$]1 \* 1000000 + [$]2 \* 1000 + [$]3`
+-  if test "esmtp_libesmtp_version" -ge 1000003; then
+-    echo "checking for libESMTP version ... $libesmtp_version (ok)"
+-  else
+-    echo "checking for libESMTP version ... $libesmtp_version (Error: you need libESMTP version 1.0.3r1 or newer installed to build esmtp)"
+-    exit 1
+-  fi
+-
+-  dnl check PHP version
+-  php_version=`$PHP_CONFIG --version 2>/dev/null|head -n 1|sed -e 's/^[^0-9]*//' -e 's/[a-z]* *$//'`
+-  if test -z "$php_version"; then
+-    echo "Error: php/php-config not found."
+-    exit 1
+-  fi
+-  
+-  IFS=.; set $php_version; IFS=' '
+-  esmtp_php_version=`expr [$]1 \* 1000000 + [$]2 \* 1000 + [$]3`
+-  if test "esmtp_php_version" -ge 4003002; then
+-    echo "checking for PHP version ... $php_version (ok)"
+-  else
+-    echo "checking for PHP version ... $php_version (Error: you need PHP version 4.3.2 or newer installed to build esmtp)"
+-    exit 1
+-  fi
+-
+   if  test -n "$ESMTP_INCS" && test -n "$ESMTP_LIBS"; then
+     PHP_EVAL_INCLINE([$ESMTP_INCS])
+     PHP_EVAL_LIBLINE($ESMTP_LIBS, ESMTP_SHARED_LIBADD)
+ 
+     if echo "$ESMTP_INCS" | grep -- '-pthread' > /dev/null; then
+-      CFLAGS="$CFLAGS -pthreads"
++      CFLAGS="$CFLAGS -pthread"
+     fi
+     if echo "$ESMTP_LIBS" | grep -- '-pthread' > /dev/null; then
+       ESMTP_SHARED_LIBADD="$ESMTP_SHARED_LIBADD -lpthread"
+     fi
+ 
+-    IFS=.; set $php_version; IFS=' '
+-    if test "$1" = "4"; then
+-        PHP_NEW_EXTENSION(esmtp, esmtp-php4.c, $ext_shared)
+-    else
+-      if test "$1" = "5"; then
+-        PHP_NEW_EXTENSION(esmtp, esmtp.c, $ext_shared)
+-      else
+-        echo "Error: php version $php_version is unsupported."
+-	exit 1
+-      fi
+-    fi
+-
++    PHP_NEW_EXTENSION(esmtp, esmtp.c, $ext_shared)
+     PHP_SUBST(ESMTP_SHARED_LIBADD)
+     AC_DEFINE(HAVE_LIBESMTP, 1, [ ])
+   else
