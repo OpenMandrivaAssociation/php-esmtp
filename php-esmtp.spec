@@ -9,7 +9,7 @@ Version:	0.3.1
 Release:	37
 Group:		Development/PHP
 License:	PHP License
-URL:		http://pecl.php.net/package/esmtp
+URL:		https://pecl.php.net/package/esmtp
 Source0:	esmtp-%{version}.tar.bz2
 Patch0:		esmtp-0.3.1-compile_fix.diff
 Patch1:		esmtp-0.3.1-php53.diff
